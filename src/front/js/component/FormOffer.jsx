@@ -25,34 +25,39 @@ export const FormOffer = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const { name, descripcion, salario, plazo, modalidad, experiencia_minima } = formData;
+        const { name, descripcion, salario, plazo, modalidad, experiencia_minima } = formData;        
 
         if (!name || !descripcion || !salario || !plazo || !modalidad || !experiencia_minima) {
             setError('Por favor, completa todos los campos.');
         } else {
-            setError('');
             const offerDate = new Date().toISOString();
             const updatedFormData = {
                 ...formData,
-                fecha_publicacion: offerDate,
+                fecha_publicacion: offerDate.slice(0,10),
+                modalidad: formData.modalidad?.toLowerCase(),
+                experiencia_minima: formData.experiencia_minima?.toUpperCase()
+            
             };
+            console.log(updatedFormData)
 
             try {
-                await actions.CreateJobOffers(updatedFormData);
+                const resp = await actions.createJobOffer(updatedFormData);
+                console.log(resp);
                 navigate('/timeline');
             } catch (error) {
+                console.log(error)
                 setError('Ocurrió un error al crear la oferta.');
             }
 
-            setFormData({
-                name: "",
-                descripcion: "",
-                salario: "",
-                plazo: "",
-                modalidad: "Teletrabajo",
-                experiencia_minima: "Sin experiencia",
-                fecha_publicacion: null,
-            });
+            // setFormData({
+            //     name: "",
+            //     descripcion: "",
+            //     salario: "",
+            //     plazo: "",
+            //     modalidad: "Teletrabajo",
+            //     experiencia_minima: "Sin experiencia",
+            //     fecha_publicacion: null,
+            // });
         }
     };
 
@@ -72,7 +77,7 @@ export const FormOffer = () => {
                     </div>
                 </div>
                 <div className="form-box my-5 shadow-lg">
-                    <form onSubmit={handleSubmit}>
+                    <form onSubmit={ e => handleSubmit(e)}>
                         {error && <div className="alert alert-danger">{error}</div>}
                         <div className="row my-3 text-secondary fw-bold">
                             <div className="col-4 d-flex flex-column">
@@ -116,9 +121,9 @@ export const FormOffer = () => {
                                     value={formData.experiencia_minima}
                                 >
                                     <option value="">Seleccione una opción</option>
-                                    <option value="Junior">Junior</option>
-                                    <option value="Mid-senior">Mid-senior</option>
-                                    <option value="Senior">Senior</option>
+                                    <option value="JUNIOR">JUNIOR</option>
+                                    <option value="MID-SENIOR">MID-SENIOR</option>
+                                    <option value="SENIOR">SENIOR</option>
                                 </select>
                             </div>
                         </div>
