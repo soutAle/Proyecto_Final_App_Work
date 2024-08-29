@@ -3,7 +3,7 @@ This module takes care of starting the API Server, Loading the DB and Adding the
 """
 from datetime import datetime
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import Modalidad, db, User, Programador, Empleador, Ratings, Favoritos, Ofertas, Experience, Proyectos, Contact
+from api.models import Modalidad, Postulados, db, User, Programador, Empleador, Ratings, Favoritos, Ofertas, Experience, Proyectos, Contact
 from flask_jwt_extended import create_access_token,get_jwt_identity,jwt_required
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
@@ -223,6 +223,32 @@ def get_offer(id):
         return jsonify({"success": False, "msg": f"Error al obtener la oferta: {str(e)}"}), 500
 
 
+
+@api.route('/postulados', methods=['POST'])
+@jwt_required()
+def create_postulado():
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"msg": "Usuario no permitido"})
+    if not user.profile_programador:
+        return jsonify({"msg": "Solo pueden postularse programadores."})
+    
+    oferta_id = request.json.get("oferta_id")
+    oferta = Ofertas.query.get(oferta_id)
+    if not oferta:
+        return jsonify({"msg": "Oferta no encontrada o ID inválido"}), 404
+    
+    postulado_existente = Postulados.query.filter_by(user_id=user.id, oferta_id=oferta.id).first()
+    if postulado_existente:
+        return jsonify({"msg": "Ya estás inscrito en esta oferta"}), 404
+    
+    nuevo_postulado = Postulados(user_id=user.id, oferta_id=oferta.id)
+    db.session.add(nuevo_postulado)
+    db.session.commit()
+    
+    return jsonify({"msg": "Inscripcion realizada con éxito."})
+
 #contact
 @api.route('/contact', methods=['POST'])
 def contact():
@@ -246,3 +272,30 @@ def get_contacts():
         return jsonify([contact.serialize() for contact in contacts]), 200
     return jsonify({'msg':'Ningún contacto encontrado'}),404
 
+@api.route('/user/programador/addProjects', methods=['POST'])
+@jwt_required()
+def addProjects(): 
+    user_id = get_jwt_identity()
+    name = request.json.get("name", None)
+    descripcion_corta = request.json.get("descripcion_corta", None)
+    git = request.json.get("git", None)
+    link = request.json.get("link", None)
+    tecnologias = request.json.get("tecnologias", None)
+
+    if not name or not descripcion_corta or not git or not link or not tecnologias:
+        return jsonify({'addProject':False, 'msg':'Todos los campos son necesarios'})
+
+    programador = Programador.query.filter_by(user_id=user_id).first()
+    print(programador)
+    is_exist = Proyectos.query.filter_by(name=name, descripcion_corta=descripcion_corta, git=git, link=link).first()
+    print(is_exist)
+
+    if programador:
+        if(is_exist):
+            return({'addProject': False, 'msg': 'Ya existe el proyecto'})
+        else:
+            new_project = Proyectos(name=name, descripcion_corta=descripcion_corta, git=git, link=link, tecnologias=tecnologias, programador_id=programador.id )
+            db.session.add(new_project)
+            db.session.commit()
+            return jsonify({'addProject': True, 'msg': 'Ha sido agregado correctamente', 'proyectos':new_project.serialize()}),200
+    return jsonify({'addProject': False, 'msg': 'No hay ningún usuario registrado'}),404
