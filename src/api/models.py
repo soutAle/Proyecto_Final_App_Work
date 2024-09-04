@@ -12,6 +12,7 @@ class Postulados(db.Model):
 
     def __repr__(self):
         return f'<Postulados {self.user_id}>'
+    
 
     def serialize(self):
         return {
@@ -38,24 +39,25 @@ class Ratings(db.Model):
             "to_id": self.to_id,
             "value": self.value
         }
-    
+
+        
 class Favoritos(db.Model):
-    __tablename__="favoritos"
-    programador_id = db.Column (db.Integer, db.ForeignKey ("programador.id"), primary_key=True)
-    empleador_id = db.Column (db.Integer, db.ForeignKey ("empleador.id"), primary_key=True)
-    oferta_id =db.Column (db.Integer, db.ForeignKey ("ofertas.id"), primary_key=True)
-    
+    __tablename__ = "favoritos"
+    id = db.Column(db.Integer, primary_key=True)
+    programador_id = db.Column(db.Integer, db.ForeignKey("programador.id"), nullable=True)
+    empleador_id = db.Column(db.Integer, db.ForeignKey("empleador.id"), nullable=True)
+    oferta_id = db.Column(db.Integer, db.ForeignKey("ofertas.id"), nullable=True)
+
     def __repr__(self):
-        return f'<Favoritos {self.programador_id}>'
+        return f'<Favoritos {self.programador_id}-{self.empleador_id}-{self.oferta_id}>'
 
     def serialize(self):
         return {
             "programador_id": self.programador_id,
             "empleador_id": self.empleador_id,
             "oferta_id": self.oferta_id
-
-            
         }
+
     
 class User(db.Model):
     __tablename__="user"
@@ -105,8 +107,8 @@ class Programador(db.Model):
     proyectos = db.relationship ("Proyectos", backref="programador", lazy=True)
     user_id= db.Column (db.Integer, db.ForeignKey("user.id"), nullable=False)
     rating = db.relationship ("Ratings", backref="programador", lazy=True)
-    favoritos = db.relationship ("Favoritos", backref="programador", lazy=True)
-   
+    favoritos = db.relationship("Favoritos", backref="programador", lazy=True)
+
 
     def __repr__(self):
         return f'<Programador {self.id}>'
@@ -116,7 +118,7 @@ class Programador(db.Model):
             "id": self.id,
             "precio_hora": self.precio_hora,
             "tecnologias": self.tecnologias,
-            "experiencia": self.experiencia,
+            "experiencia": self.experiencia.value if self.experiencia else None,
             "descripcion": self.descripcion,
             "rating": self.rating,
             "proyectos": [proyectos.serialize()for proyectos in self.proyectos],
@@ -129,6 +131,7 @@ class Empleador(db.Model):
     cif = db.Column (db.String(15), unique=True)
     metodo_pago = db.Column (db.String(100))
     descripcion = db.Column(db.String(300))
+    premium = db.Column(db.Boolean ,default=False)
     user_id= db.Column (db.Integer, db.ForeignKey("user.id"), nullable=False)
     rating = db.relationship ("Ratings", backref="empleador", lazy=True)
     favoritos = db.relationship ("Favoritos", backref="empleador", lazy=True)
@@ -144,6 +147,7 @@ class Empleador(db.Model):
             "cif": self.cif,
             "metodo_pago": self.metodo_pago,
             "descripcion": self.descripcion,
+            "premium": self.premium,
             "favoritos": [favoritos.serialize() for favoritos in self.favoritos]  if self.favoritos else None
         }
     
@@ -153,13 +157,21 @@ class Empleador(db.Model):
 class Modalidad(Enum):
     TELETRABAJO = 'teletrabajo'
     PRESENCIAL = 'presencial'
+    HYBRIDO = 'hybrido'
     
 class Ofertas(db.Model):
     __tablename__="ofertas"
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column (db.String (100), nullable=False)
-    descripcion = db.Column (db.String(700), nullable=False)
-    salario = db.Column (db.String(20), nullable=False)
+    nombre_empresa = db.Column (db.String(100), nullable=False)
+    descripcion = db.Column (db.String(), nullable=False)
+    salario = db.Column (db.String(20))
+    localidad = db.Column(db.String(30), nullable=False)
+    requisitos_minimos = db.Column(db.String(400), nullable=False)
+    horario = db.Column(db.String(100))
+    tipo_contrato = db.Column(db.String(100))
+    estudios_minimos = db.Column(db.String(100))
+    idiomas = db.Column(db.String(30))
     plazo = db.Column(db.String(100), nullable=False)
     modalidad = db.Column(db.Enum(Modalidad), nullable=False)
     experiencia_minima = db.Column (db.Enum(Experience), nullable=False)
@@ -176,8 +188,15 @@ class Ofertas(db.Model):
         return {
             "id": self.id,
             "name": self.name,
+            "nombre_empresa": self.nombre_empresa,
             "descripcion": self.descripcion,
             "salario": self.salario,
+            "localidad": self.localidad,
+            "requisitos_minimos": self.requisitos_minimos,
+            "horario": self.horario,
+            "tipo_contrato": self.tipo_contrato,
+            "estudios_minimos": self.estudios_minimos,
+            "idiomas": self.idiomas,
             "plazo": self.plazo,
             "modalidad": self.modalidad.value,
             "experiencia_minima": self.experiencia_minima.value,

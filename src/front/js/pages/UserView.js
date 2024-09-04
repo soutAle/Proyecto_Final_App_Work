@@ -15,8 +15,8 @@ import '../../styles/userview.css';
 export const Userview = () => {
     return (
 
-        <div className="container">
-            <div className='body'>
+        <div className="container-userview">
+            <div className='body-userview'>
                 <UsersProfile />
 
 

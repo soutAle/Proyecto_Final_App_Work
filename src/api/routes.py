@@ -3,15 +3,22 @@ This module takes care of starting the API Server, Loading the DB and Adding the
 """
 from datetime import datetime
 from flask import Flask, request, jsonify, url_for, Blueprint
+import os
 from api.models import Modalidad, Postulados, db, User, Programador, Empleador, Ratings, Favoritos, Ofertas, Experience, Proyectos, Contact
 from flask_jwt_extended import create_access_token,get_jwt_identity,jwt_required
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 from flask_bcrypt import generate_password_hash , check_password_hash
+import stripe
+
 
 
 api = Blueprint('api', __name__)
 
+
+
+# API KEY STRIPE
+stripe.api_key = 'sk_test_51PsqIxG3cEcyZuNprPRA1UTti31vG7fgiVVBfefTiZ61KUnQpESthKWS5oV9QFWCQoVsWzLbAJLmGP7npT9Wejth00qZpNlIhY'
 
 # Allow CORS requests to this API
 CORS(api)
@@ -35,7 +42,7 @@ def register():
     password = request.json.get("password", None)
     country = request.json.get("country", None)
     cif= request.json.get("cif", None)
-    if not name or not username or not email or not password or not country:
+    if not name or not email or not password or not country:
         return jsonify({'success':False, 'msg':'Todos los campos son necesarios'})
     email_exist = User.query.filter_by(email=email).first()
     if email_exist:
@@ -104,8 +111,6 @@ def editEmpleador():
     empleador.descripcion=descripcion
     db.session.commit()
     return jsonify({'editar':True, 'msg': 'Usuario modificado correctamente', 'user': user.serialize(), 'empleador':empleador.serialize()}), 200
-    
-
 
 
 #Agregar usuario a Programador   
@@ -159,14 +164,21 @@ def crear_oferta():
         return jsonify({"success": False, "msg": "El usuario no es un empleador"}), 400
 
     name = request.json.get("name")
+    nombre_empresa = request.json.get("nombre_empresa")
     descripcion = request.json.get("descripcion")
     salario = request.json.get("salario")
+    localidad = request.json.get("localidad")
+    tipo_contrato = request.json.get("tipo_contrato")
+    estudios_minimos = request.json.get("estudios_minimos")
+    horario = request.json.get("horario")
+    requisitos_minimos = request.json.get("requisitos_minimos")
+    idiomas = request.json.get("idiomas")
     plazo = request.json.get("plazo")
     modalidad = request.json.get("modalidad")
     experiencia_minima = request.json.get("experiencia_minima")
     fecha_publicacion_str = request.json.get("fecha_publicacion")
     
-    if not name or not descripcion or not salario or not plazo or not modalidad or not fecha_publicacion_str or not experiencia_minima:
+    if not name or not nombre_empresa or not descripcion or not localidad or not plazo or not modalidad or not fecha_publicacion_str or not experiencia_minima:
         return jsonify({"success": False, "msg": "Todos los campos son requeridos"}), 400
 
     try:
@@ -182,15 +194,22 @@ def crear_oferta():
 
     nueva_oferta = Ofertas(
         name=name,
+        nombre_empresa=nombre_empresa,
         descripcion=descripcion,
         salario=salario,
+        localidad=localidad,
+        tipo_contrato=tipo_contrato,
+        idiomas=idiomas,
+        estudios_minimos=estudios_minimos,
+        horario=horario,
+        requisitos_minimos=requisitos_minimos,
         plazo=plazo,
         modalidad=modalidad_enum,
         experiencia_minima=experiencia_minima,
         fecha_publicacion=fecha_publicacion,
         empleador_id=empleador.id
     )
-
+    
     try:
         db.session.add(nueva_oferta)
         db.session.commit()
@@ -221,18 +240,19 @@ def get_offer(id):
 
     except Exception as e:
         return jsonify({"success": False, "msg": f"Error al obtener la oferta: {str(e)}"}), 500
-
-
+    
 
 @api.route('/postulados', methods=['POST'])
 @jwt_required()
 def create_postulado():
     user_id = get_jwt_identity()
+
     user = User.query.get(user_id)
     if not user:
-        return jsonify({"msg": "Usuario no permitido"})
+        return jsonify({"msg": "Usuario no permitido"}), 401
+    
     if not user.profile_programador:
-        return jsonify({"msg": "Solo pueden postularse programadores."})
+        return jsonify({"msg": "Solo pueden postularse programadores."}), 403
     
     oferta_id = request.json.get("oferta_id")
     oferta = Ofertas.query.get(oferta_id)
@@ -241,13 +261,129 @@ def create_postulado():
     
     postulado_existente = Postulados.query.filter_by(user_id=user.id, oferta_id=oferta.id).first()
     if postulado_existente:
-        return jsonify({"msg": "Ya estás inscrito en esta oferta"}), 404
+        return jsonify({"msg": "Ya estás inscrito en esta oferta"}), 409
     
     nuevo_postulado = Postulados(user_id=user.id, oferta_id=oferta.id)
     db.session.add(nuevo_postulado)
     db.session.commit()
     
-    return jsonify({"msg": "Inscripcion realizada con éxito."})
+    return jsonify({"msg": "Inscripcion realizada con éxito."}),200
+
+@api.route('/ofertas/<int:oferta_id>/postulados', methods=['GET'])
+@jwt_required(optional=True)  
+def get_numero_postulados(oferta_id):
+
+    oferta = Ofertas.query.get(oferta_id)
+    if not oferta:
+        return jsonify({"msg": "Oferta no encontrada"}), 404
+
+    numero_postulados = Postulados.query.filter_by(oferta_id=oferta_id).count()
+    return jsonify({"numero_postulados": numero_postulados}), 200
+
+@api.route('/postulados/<int:oferta_id>', methods=['DELETE'])
+@jwt_required()
+def delete_postulado(oferta_id):
+    user_id = get_jwt_identity()  
+
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"msg": "Usuario no permitido"}), 401
+
+    oferta = Ofertas.query.get(oferta_id)
+    if not oferta:
+        return jsonify({"msg": "Oferta no encontrada o ID inválido"}), 404
+
+    postulado = Postulados.query.filter_by(user_id=user.id, oferta_id=oferta.id).first()
+    if not postulado:
+        return jsonify({"msg": "No estás inscrito en esta oferta"}), 404
+
+    db.session.delete(postulado)
+    db.session.commit()
+
+    return jsonify({"msg": "Desinscripción realizada con éxito."}), 200
+
+# Mostrar todas las calificaciones
+@api.route('/ratings', methods=['GET'])
+def get_all_ratings():
+    try:
+        ratings = Ratings.query.all()
+        if ratings:
+            return jsonify({"success": True, "ratings": [rating.serialize() for rating in ratings]}), 200
+        return jsonify({"success": False, "msg": "No hay calificaciones disponibles"}), 404
+    except Exception as e:
+        return jsonify({"success": False, "msg": f"Error al obtener las calificaciones: {str(e)}"}), 500
+
+# Mostrar una calificación específica
+@api.route('/ratings/<int:id>', methods=['GET'])
+def get_rating(id):
+    try:
+        rating = Ratings.query.get(id)
+        if not rating:
+            return jsonify({"success": False, "msg": "Calificación no encontrada"}), 404
+        return jsonify({"success": True, "rating": rating.serialize()}), 200
+    except Exception as e:
+        return jsonify({"success": False, "msg": f"Error al obtener la calificación: {str(e)}"}), 500
+
+# Crear una nueva calificación
+@api.route('/ratings', methods=['POST'])
+@jwt_required()
+def create_rating():
+    from_id = request.json.get("from_id")
+    to_id = request.json.get("to_id")
+    value = request.json.get("value")
+
+    if not from_id or not to_id or not value:
+        return jsonify({"success": False, "msg": "Todos los campos son requeridos"}), 400
+
+    if value < 1 or value > 5:
+        return jsonify({"success": False, "msg": "El valor de la calificación debe estar entre 1 y 5"}), 400
+
+    new_rating = Ratings(from_id=from_id, to_id=to_id, value=value)
+
+    try:
+        db.session.add(new_rating)
+        db.session.commit()
+        return jsonify({"success": True, "msg": "Calificación creada exitosamente", "rating": new_rating.serialize()}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "msg": f"Error al crear la calificación: {str(e)}"}), 500
+
+# Actualizar una calificación existente
+@api.route('/ratings/<int:id>', methods=['PUT'])
+@jwt_required()
+def update_rating(id):
+    rating = Ratings.query.get(id)
+    if not rating:
+        return jsonify({"success": False, "msg": "Calificación no encontrada"}), 404
+
+    value = request.json.get("value")
+    if value is not None:
+        if value < 1 or value > 5:
+            return jsonify({"success": False, "msg": "El valor de la calificación debe estar entre 1 y 5"}), 400
+        rating.value = value
+
+    try:
+        db.session.commit()
+        return jsonify({"success": True, "msg": "Calificación actualizada exitosamente", "rating": rating.serialize()}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "msg": f"Error al actualizar la calificación: {str(e)}"}), 500
+
+@api.route('/ratings/<int:id>', methods=['DELETE'])
+@jwt_required()
+def delete_rating(id):
+    rating = Ratings.query.get(id)
+    if not rating:
+        return jsonify({"success": False, "msg": "Calificación no encontrada"}), 404
+
+    try:
+        db.session.delete(rating)
+        db.session.commit()
+        return jsonify({"success": True, "msg": "Calificación eliminada exitosamente"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "msg": f"Error al eliminar la calificación: {str(e)}"}), 500
+    
 
 #contact
 @api.route('/contact', methods=['POST'])
@@ -299,3 +435,81 @@ def addProjects():
             db.session.commit()
             return jsonify({'addProject': True, 'msg': 'Ha sido agregado correctamente', 'proyectos':new_project.serialize()}),200
     return jsonify({'addProject': False, 'msg': 'No hay ningún usuario registrado'}),404
+
+@api.route('/reset-password', methods=['POST'])
+@jwt_required()
+def reset_password():
+
+    user_id=get_jwt_identity()
+    password=request.json.get('password')
+    user=User.query.get(user_id)
+    if not user:
+        return jsonify({"msg":"User not found"}), 404
+    user.password=user.generate_password_hash(password)
+    db.session.commit()
+    return jsonify({"msg":"Password updated"}), 200
+
+
+
+
+@api.route('/create-payment', methods=['POST'])
+@jwt_required()
+def create_payment():
+    user_id = get_jwt_identity()
+    data = request.get_json()
+    amount = 200
+    payment = stripe.PaymentIntent.create(
+        amount=amount,
+        currency='eur',
+        payment_method=data['payment_method'],
+        payment_method_types=["card"],
+        off_session=True,
+        confirm=True,
+    )
+    user = User.query.get(user_id)
+    empleador = user.profile_empleador
+    if(empleador):
+        print(payment)
+        empleador.premium=True
+        db.session.commit()
+        return jsonify({'success': True, 'payment':f'Has sido suscrito con éxito, gracias por confiar en Loopy', "user":user.serialize()}),200
+    else:
+        return jsonify({'success': False, 'payment':f'Algo ha fallado, por favor vuelva a intentarlo'}),200
+    
+    
+#Favoritos
+@api.route('/favoritos', methods=['POST'])
+def add_favorito():
+    data = request.json
+
+    if not data.get('programador_id') and not data.get('empleador_id') and not data.get('oferta_id'):
+        return jsonify({'msg': 'Debe proporcionar al menos un ID de programador, empleador o oferta'}), 400
+    
+    new_favorite = Favoritos(
+        programador_id=data.get('programador_id'),
+        empleador_id=data.get('empleador_id'),
+        oferta_id=data.get('oferta_id')
+    )
+    
+    db.session.add(new_favorite)
+    db.session.commit()
+
+    return jsonify(new_favorite.serialize()), 201
+
+
+@api.route('/user/<int:user_id>/favoritos', methods=['GET'])
+def get_user_favorites(user_id):
+    user = User.query.get(user_id)
+    
+    if not user:
+        return jsonify({'msg': 'Usuario no encontrado'}), 404
+    
+    favoritos = []
+    
+    if user.profile_programador:
+        favoritos.extend(user.profile_programador.favoritos)
+    
+    if user.profile_empleador:
+        favoritos.extend(user.profile_empleador.favoritos)
+    
+    return jsonify([favorito.serialize() for favorito in favoritos]), 200

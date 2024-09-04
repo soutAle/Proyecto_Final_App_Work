@@ -9,8 +9,8 @@ import OfferManager from '../component/companyview/OfferManager';
 export const Companyview = () => {
     return (
 
-        <div className="container">
-            <div className='body'>
+        <div className="container-company">
+            <div className='.body-company'>
                 <CompanyProfile />
 
 

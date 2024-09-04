@@ -12,6 +12,17 @@
     overflow: hidden; 
 }
 
+.heart-icon{
+    position: relative;
+    top: 10px;
+    left: 65px;
+    color:  rgb(103, 147, 174);
+    font-size: 1.9rem;
+}
+.heart-icon:hover{
+    color: rgb(135, 193, 229);
+}
+
 .card-offer:hover {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     cursor: pointer;
@@ -33,8 +44,15 @@
     font-size: 1.5rem;
 }
 
+.header-box .fecha-publicacion{
+    position:absolute;
+    right: 10px;
+    font-size: 0.8rem;
+}
+
 .card-offer-description {
     position: relative;
+    bottom: 20px;
     font-size: 0.85rem;
     color: #666;
     display: -webkit-box;
@@ -46,7 +64,6 @@
 }
 
 .text-description {
-    margin: 0;
     line-height: 1.2em;
 }
 
@@ -89,15 +106,30 @@
     align-items: center; 
 
 }
+
+.card-offer-details .list-footer-details:nth-child(3){
+    font-size: 0.85rem;
+
+}
 .card-offer-actions{
     display: flex;
     gap: 10px; 
     margin-top: 10px; 
     font-size: 0.85rem;
 }
+.card-offer-actions .btn-details{
+    position: relative;
+    left: 70px;
+    background-color: rgb(103, 147, 174);
+    font-size: 0.75rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: none;
 
-.card-offer-actions .btn-details,
-.card-offer-actions .btn-inscribirse {
+}
+
+.card-offer-actions .btn-inscribirse,
+.card-offer-actions .btn-desinscribirse {
     position: relative;
     left: 50px;
     background-color: rgb(103, 147, 174);
@@ -107,25 +139,14 @@
     border: none;
 }
 .card-offer-actions .btn-details:hover,
-.card-offer-actions .btn-inscribirse:hover {
+.card-offer-actions .btn-inscribirse:hover,
+.card-offer-actions .btn-desinscribirse:hover {
     color: white;
     background-color: rgb(135, 193, 229);
 }
-
-.save-icon {
-    position: absolute;
-    top: -5px;
-    right: -15px;
-}
-.btn-save {
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    font-size: 1.5rem;
-    color:  rgb(103, 147, 174);
+.num-postulados{
+    font-size: 0.75rem;
+    text-wrap: nowrap;
 }
 
-.btn-save:hover {
-    color: rgb(135, 193, 229);
-}
 
