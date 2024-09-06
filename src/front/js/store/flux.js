@@ -462,153 +462,61 @@ const getState = ({ getStore, getActions, setStore }) => {
 				});
 			},
 
-			resetPassword: async (token, password1, password2) => {
-				if (!password1 || !password2) {
-					console.log("Faltan campos");
-					return false;
-				}
+			requestPasswordReset: async (email) => {
+                try {
+                    const resp = await fetch(`${process.env.BACKEND_URL}/api/requestpasswordreset`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ email }),
+                    });
 
-				if (password1.trim() !== password2.trim()) {
-					console.log("Las contraseñas no coinciden");
-					return false;
-				}
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        console.log("Correo de restablecimiento enviado", data);
+                        return { success: true, message: data.message };
+                    } else {
+                        const errorData = await resp.json();
+                        console.log("Error al solicitar restablecimiento:", errorData.message);
+                        return { success: false, message: errorData.message };
+                    }
+                } catch (error) {
+                    console.error("Error al solicitar restablecimiento de contraseña:", error);
+                    return { success: false, message: "Error al conectarse con el servidor." };
+                }
+            },
 
-				try {
-					const resp = await fetch(`${process.env.BACKEND_URL}/reset-password`, {
-						method: "POST",
-						headers: {
-							"Content-Type": "application/json",
-							Authorization: `Bearer ${token}`,
-						},
-						body: JSON.stringify({
-							password: password1,
-						}),
-					});
-
-					if (resp.ok) {
-						const data = await resp.json();
-						console.log("Contraseña cambiada exitosamente", data);
-						return true;
-					} else {
-						const errorData = await resp.json();
-						console.log("Error al cambiar contraseña:", errorData.message);
-						return false;
-					}
-				} catch (error) {
-					console.error("Error al cambiar contraseña:", error);
-					return false;
-				}
-			},
-
-			addFavorite: async (programador_id, empleador_id, oferta_id) => {
-				try {
-					const response = await fetch(`${process.env.BACKEND_URL}/api/favoritos`, {
-						method: 'POST',
-						headers: {
+            resetPassword: async (token, password) => {
+                try {
+                    const resp = await fetch(`${process.env.BACKEND_URL}/api/resetpassword`, {
+                        method: 'POST',
+                        headers: {
 							'Content-Type': 'application/json',
-						},
-						body: JSON.stringify({
-							programador_id: programador_id,
-							empleador_id: empleador_id,
-							oferta_id: oferta_id,
-						}),
-					});
+							'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ password }),
+                    });
 
-					if (!response.ok) {
-						throw new Error('Error al agregar favorito');
-					}
-
-					getActions().getFavorites()
-
-					return true;
-
-				} catch (error) {
-					console.error('Error:', error);
-					throw error;
-				}
-			},
-
-			getFavorites: async (id = getStore().user.id) => {
-
-
-				if (!id) {
-					console.error('No se pudo obtener el ID del usuario');
-					return;
-				}
-
-				try {
-					const response = await fetch(`${process.env.BACKEND_URL}/api/user/${id}/favoritos`, {
-						method: 'GET',
-						headers: {
-							'Content-Type': 'application/json',
-						},
-					});
-
-					if (response.ok) {
-						const { favoritos } = await response.json();
-						setStore({ favorites: favoritos }); // Asegúrate de que el 'data' ya es la lista de favoritos
-					} else {
-						console.error('Error al obtener los favoritos');
-					}
-				} catch (error) {
-					console.error('Error en la solicitud de favoritos:', error);
-				}
-			},
-
-			removeFavorite: async (programador_id, empleador_id, oferta_id) => {
-				try {
-					const response = await fetch(`${process.env.BACKEND_URL}/api/favoritos`, {
-						method: "DELETE",
-						headers: {
-							"Content-Type": "application/json",
-							Authorization: `Bearer ${localStorage.getItem("token")}` // Si estás utilizando autenticación con tokens
-						},
-						body: JSON.stringify({
-							programador_id: programador_id || null,
-							empleador_id: empleador_id || null,
-							oferta_id: oferta_id
-						})
-					});
-
-					if (!response.ok) {
-						throw new Error("Error al eliminar favorito.");
-					}
-
-					const data = await response.json();
-
-					if (data.success) {
-
-						setStore({
-							favorites: getStore().favorites.filter(
-								(fav) => fav.id !== oferta_id || fav.programador_id !== programador_id || fav.empleador_id !== empleador_id
-							)
-						});
-						getActions().getFavorites()
-						return true;
-					} else {
-						return { success: false, msg: data.msg || "Error desconocido." };
-					}
-				} catch (error) {
-					console.error("Error en removeFavorite:", error);
-					return { success: false, msg: error.message };
-				}
-			},
-			getUser: async (id_programador) => {
-
-				try {
-					const response = await fetch(`${process.env.BACKEND_URL}/api/getUsers/${id_programador}`)
-					const data = await response.json();
-
-
-					setStore({ postulado: data.user })
-
-
-				} catch (error) {
-					console.log("Error");
-				}
-			}
-		},
-	};
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        console.log("Contraseña restablecida exitosamente", data);
+                        return { success: true, message: data.message };
+                    } else {
+                        const errorData = await resp.json();
+                        console.log("Error al restablecer contraseña:", errorData.message);
+                        return { success: false, message: errorData.message };
+                    }
+                } catch (error) {
+                    console.error("Error al restablecer contraseña:", error);
+                    return { success: false, message: "Error al conectarse con el servidor." };
+                }
+            },
+        }
+    };
 };
+			
+	
+
 
 export default getState;
