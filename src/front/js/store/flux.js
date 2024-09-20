@@ -28,7 +28,6 @@ const getState = ({ getStore, getActions, setStore }) => {
 						}
 					});
 
-
 					if (resp.ok) {
 						const data = await resp.json();
 						console.log('esto es la data', data);
