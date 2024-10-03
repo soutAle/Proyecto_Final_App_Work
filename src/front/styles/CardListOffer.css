@@ -1,14 +1,21 @@
-.list-offer-box{
-    position: relative;
-    left: 21%;
-    margin-bottom: 10px;
-}
 .list-offer-container {
     position: relative;
-    right: 70px;
+    left: 100px;
+    width: 100%; 
+    max-width: 1200px; 
+    margin: 0 auto; 
+    padding: 1rem;
 }
 
 .no-offers-section{
     position: relative;
-    top: 50px;
+    top: 25px;
+    right: 145px;
+    background-color: rgba(255, 255, 255, 0.308);
 }
+
+.loading-section{
+    position: relative;
+    right: 140px;
+}
+

@@ -5,6 +5,10 @@ import { Context } from "../store/appContext";
 export const Navbar = () => {
   const { store, actions } = useContext(Context);
   const navigate = useNavigate();
+  const handleLogOutRedirect = () => {
+    actions.logOut()
+    navigate("/")
+  }
 
   return (
     <nav className="navbar" style={{ backgroundColor: "#6793AE", height: "120px" }}>
@@ -18,7 +22,7 @@ export const Navbar = () => {
           />
         </Link>
 
-        <div className="navbar navbar-expand-lg ms-auto">
+        <div className="navbar navbar-expand-sm ms-auto">
           <div className="container-fluid">
             <div className="collapse navbar-collapse" id="navbarNavAltMarkup">
               <div className="navbar-nav me-auto">
@@ -64,30 +68,33 @@ export const Navbar = () => {
                     >
                       PERFIL
                     </Link>
-                    <button
-                      type="button"
-                      className="btn rounded-pill me-4 pe-none"
-                      style={{
-                        backgroundColor: "#70879C",
-                        borderColor: "white",
-                        color: "white",
-                      }}
-                    >
-                      Suscripción: {store.user.profile_empleador.premium ? "Premium" : "Free"}
-                    </button>
-                  </>
+                    </>
                 )}
 
                 {store.user ? (
                   <>
-                   <Link 
-                        to="/favoritosPage"
-                        className="nav-link active me-3"
-                        style={{ color: "white" }}
-                      >
-                        FAVORITOS
-  
+                    <Link
+                      to="/favoritosPage"
+                      className="nav-link active me-3"
+                      style={{ color: "white" }}
+                    >
+                      FAVORITOS
+
                     </Link>
+                    {store.user.profile_empleador && (
+                       <button
+                       type="button"
+                       className="btn rounded-pill me-4 pe-none"
+                       style={{
+                         backgroundColor: "#70879C",
+                         borderColor: "white",
+                         color: "white",
+                       }}
+                     >
+                       Suscripción: {store.user.profile_empleador.premium ? "Premium" : "Free"}
+                     </button>
+                   
+                    )}
 
                     <button
                       type="button"
@@ -100,9 +107,9 @@ export const Navbar = () => {
                     >
                       Usuario: {store.user.name}
                     </button>
-                    
+
                     <button
-                      onClick={() => actions.logOut()}
+                      onClick={handleLogOutRedirect}
                       type="button"
                       className="btn rounded-pill me-3"
                       style={{
@@ -114,7 +121,7 @@ export const Navbar = () => {
                       Cerrar Sesión
                     </button>
 
-                    
+
                   </>
                 ) : (
                   <>
