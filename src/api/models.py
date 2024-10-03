@@ -67,7 +67,7 @@ class User(db.Model):
     name = db.Column(db.String(20), nullable=False)
     username = db.Column(db.String(50), nullable=False)
     photo = db.Column(db.String(200))
-    phone = db.Column(db.String(30))
+    phone = db.Column(db.String(30), unique=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(80), nullable=False)
     country = db.Column(db.String(20), nullable=False)
