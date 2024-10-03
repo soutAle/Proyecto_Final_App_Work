@@ -62,7 +62,7 @@ export const Navbar = () => {
                     </Link>
 
                     <Link
-                      to={"/Companyview"}
+                      to={"/companyprofile"}
                       className="nav-link active me-3"
                       style={{ color: "white" }}
                     >

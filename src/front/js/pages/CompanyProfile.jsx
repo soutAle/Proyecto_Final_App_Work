@@ -17,7 +17,6 @@ export const CompanyProfile = ({ empleador_id }) => {
 
     return (
         <div className="contenedor container">
-            <div className='body'>
                 <div className="company-profile">
                     <div className="company-header mt-5">
                         <img
@@ -74,7 +73,7 @@ export const CompanyProfile = ({ empleador_id }) => {
                         <OfferManager />
                     </div>
                 </AccordionSection>
-            </div>
+            
         </div>
     );
 };
